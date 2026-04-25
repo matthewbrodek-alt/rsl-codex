@@ -1,73 +1,98 @@
 import { Link } from "react-router-dom";
-import { Champion, AFFINITY_RU, RARITY_RU, ROLE_RU, affinityClass, rarityClass } from "@/lib/champions";
+import { Champion, AFFINITY_RU, RARITY_RU, ROLE_RU } from "@/lib/champions";
 import { StarRating } from "./StarRating";
 
-export const ChampionCard = ({ c }: { c: Champion }) => {
-  // Твоя логика расчета рейтинга — сохранена полностью
-  const ratingAvg =
-    [c.rating_cb, c.rating_arena, c.rating_fw, c.rating_dungeons]
-      .filter((x): x is number => typeof x === "number")
-      .reduce((a, b, _, arr) => a + b / arr.length, 0) || 0;
+// Словарь иконок стихий. 
+// Убедись, что эти файлы лежат по пути: public/assets/icons/elements/
+const AFFINITY_ICONS: Record<string, string> = {
+  Magic: "/assets/icons/elements/magic.webp",
+  Force: "/assets/icons/elements/force.webp",
+  Spirit: "/assets/icons/elements/spirit.webp",
+  Void: "/assets/icons/elements/void.webp",
+};
 
-  // Твоя логика цветных колец редкости — сохранена
-  const rarityRing =
-    c.rarity === "Legendary"
-      ? "ring-rarity-legendary shadow-[0_0_15px_rgba(255,184,0,0.1)]" // Добавил легкое свечение
-      : c.rarity === "Epic"
-      ? "ring-rarity-epic shadow-[0_0_15px_rgba(163,53,238,0.1)]"
-      : c.rarity === "Rare"
-      ? "ring-rarity-rare shadow-[0_0_15px_rgba(0,112,243,0.1)]"
-      : "";
+export const ChampionCard = ({ c }: { c: Champion }) => {
+  // Расчет среднего рейтинга на основе всех оценок
+  const ratings = [c.rating_cb, c.rating_arena, c.rating_fw, c.rating_dungeons];
+  const validRatings = ratings.filter((x): x is number => x !== null);
+  const ratingAvg = validRatings.length > 0 
+    ? validRatings.reduce((a, b) => a + b, 0) / validRatings.length 
+    : 0;
+
+  const rarityLow = c.rarity?.toLowerCase() || "common";
+  const affinityLow = c.affinity?.toLowerCase() || "";
 
   return (
     <Link
       to={`/champions/${c.slug}`}
-      /* КЛЮЧЕВЫЕ ИЗМЕНЕНИЯ ДИЗАЙНА:
-         - bg-white/[0.03] и backdrop-blur-xl (эффект стекла)
-         - border-white/10 (тонкая грань)
-         - Сохранение твоего rarityRing для акцента
-      */
-      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-2 hover:scale-[1.02] hover:bg-white/[0.06] ${rarityRing}`}
+      className={`champion-card group ${rarityLow}`}
     >
-      {/* Шапка карточки: Имя и Стихия */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <h3 className={`font-display text-lg font-bold leading-tight tracking-tight transition-colors group-hover:text-white ${rarityClass(c.rarity).split(" ")[0]}`}>
-            {c.name_ru}
-          </h3>
-          <p className="mt-0.5 text-xs font-medium text-white/40">{c.name_en}</p>
+      <div className="champion-card-img-wrap relative aspect-square overflow-hidden bg-[#0d0d0f]">
+        {/* Картинка героя с плавным зумом при наведении */}
+        {c.image_url || c.avatar_url ? (
+          <img
+            src={c.image_url || c.avatar_url || ""}
+            alt={c.name_ru}
+            loading="lazy"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-4xl opacity-20">
+            ⚔
+          </div>
+        )}
+
+        {/* Слой затемнения для контраста бейджей */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-40"></div>
+
+        {/* Бейдж стихии (Affinity) */}
+        <div 
+          className={`element-badge ${affinityLow} absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/10 p-1`} 
+          title={AFFINITY_RU[c.affinity]}
+        >
+          {AFFINITY_ICONS[c.affinity] ? (
+            <img 
+              src={AFFINITY_ICONS[c.affinity]} 
+              alt={c.affinity} 
+              className="w-full h-full object-contain" 
+            />
+          ) : (
+            <span className="text-[10px] font-bold text-white/50">{AFFINITY_RU[c.affinity]?.charAt(0)}</span>
+          )}
+        </div>
+
+        {/* Бейдж редкости (текстовый, как в доноре) */}
+        <div className={`rarity-badge ${rarityLow} absolute top-2 right-2 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest bg-black/60 backdrop-blur-sm border border-white/10`}>
+          {RARITY_RU[c.rarity]}
+        </div>
+      </div>
+
+      <div className="champion-card-body p-4 bg-[#141418]">
+        {/* Имя героя — подсвечивается золотым при наведении на карточку */}
+        <div className="champion-name text-lg font-bold italic text-white group-hover:text-gold transition-colors duration-300 truncate">
+          {c.name_ru}
         </div>
         
-        {/* Твоя стихия с оригинальным классом */}
-        <span className={`rounded-lg border bg-black/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest backdrop-blur-md ${affinityClass(c.affinity)}`}>
-          {AFFINITY_RU[c.affinity]}
-        </span>
-      </div>
-
-      {/* Контент: Фракция, Роль, Редкость */}
-      <div className="mt-4 flex flex-wrap gap-2 text-[10px]">
-        <span className="rounded-md border border-white/5 bg-white/5 px-2.5 py-1 font-medium text-white/70">
-          {c.faction}
-        </span>
-        <span className="rounded-md border border-white/5 bg-white/5 px-2.5 py-1 font-medium text-white/70">
-          {ROLE_RU[c.role] ?? c.role}
-        </span>
-        <span className={`rounded-md border px-2.5 py-1 font-bold backdrop-blur-sm ${rarityClass(c.rarity)}`}>
-          {RARITY_RU[c.rarity]}
-        </span>
-      </div>
-
-      {/* Футер: Рейтинг со звездами */}
-      <div className="mt-5 border-t border-white/10 pt-4">
-        <div className="flex items-center justify-between">
+        <div className="champion-meta flex justify-between items-center mt-1">
+          <span className="champion-faction text-[11px] uppercase tracking-tighter text-gold/80 font-semibold">
+            {c.faction}
+          </span>
+          <span className="champion-type text-[11px] text-gray-500 uppercase tracking-tighter">
+            {ROLE_RU[c.role] ?? c.role}
+          </span>
+        </div>
+        
+        {/* Блок с рейтингом */}
+        <div className="mt-3 pt-2 border-t border-white/5 flex justify-between items-center">
           <StarRating value={ratingAvg} />
-          {/* Маленький индикатор в стиле Neko Market */}
-          <div className="text-[9px] font-bold uppercase text-white/20">Details →</div>
+          <span className="text-[10px] text-gray-600 font-mono italic">
+            {ratingAvg > 0 ? ratingAvg.toFixed(1) : ""}
+          </span>
         </div>
       </div>
 
-      {/* Декоративный градиент на фоне при ховере (эффект Neko) */}
-      <div className="absolute -inset-px -z-10 rounded-2xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      {/* Декоративное свечение из твоего CSS */}
+      <div className="card-glow absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
     </Link>
   );
 };

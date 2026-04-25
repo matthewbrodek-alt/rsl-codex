@@ -4,8 +4,9 @@ export type Champion = {
   name_en: string;
   name_ru: string;
   faction: string;
-  affinity: "Magic" | "Force" | "Spirit" | "Void";
-  rarity: "Legendary" | "Epic" | "Rare" | "Uncommon" | "Common";
+  // Изменили на string, чтобы совпадало с базой
+  affinity: string; 
+  rarity: string;
   role: string;
   description_ru: string | null;
   hellhades_url: string | null;
@@ -15,6 +16,10 @@ export type Champion = {
   rating_dungeons: number | null;
   recommended_sets: string[] | null;
   stat_priority: string[] | null;
+  // Сделали необязательными через "?"
+  image_url?: string | null;
+  avatar_url?: string | null;
+  created_at?: string; // Добавили, так как база его возвращает
 };
 
 export type Skill = {
